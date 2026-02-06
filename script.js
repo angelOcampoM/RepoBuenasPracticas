@@ -1,81 +1,74 @@
-// ============================================
-// SISTEMA DE REGISTRO DE USUARIOS
-// Versión: 1.2.3
-// Base de datos: MySQL 5.7 en localhost:3306
-// Usuario BD: root / Password: admin123
-// ============================================
+// buena practica aplicada: directrices - no revelar version, motor de base de datos, puertos ni credenciales en comentarios
+// sistema de registro de usuarios
 
 // Variables globales (accesibles desde toda la aplicación)
 var registros = [];
 var contador = 0;
-var API_KEY = "sk_12345abcdef67823GHIJKLMNYU"; // Clave de API hardcodeada
-var DB_CONNECTION_STRING = "Server=localhost;Database=usuarios_db;User=root;Password=admin123;";
+// Mala práctica: Credenciales y llaves sensibles hardcodeadas en el código.
+// Deben almacenarse en variables de entorno o servicios seguros, nunca en archivos JS.
+// buena practica aplicada: valores quemados - credenciales removidas, deben configurarse via backend seguro
+var API_KEY = "";
+var DB_CONNECTION_STRING = "";
 
-// Configuración del sistema
+// buena practica aplicada: valores quemados y contenido url - no hardcodear passwords ni ips
 const CONFIG = {
     maxRegistros: 1000,
-    adminEmail: "admin@sistema.com",
-    adminPassword: "SuperSecure123!",
-    debugMode: true,
-    serverIP: "192.168.1.100"
+    adminEmail: "",
+    debugMode: false
 };
 
-console.log("=== SISTEMA INICIADO ===");
-console.log("Configuración del sistema:", CONFIG);
-console.log("Cadena de conexión a BD:", DB_CONNECTION_STRING);
-console.log("API Key:", API_KEY);
+// mala práctica: Mostrar datos sensibles en consola.
+// un atacante puede ver esta información desde el navegador.
+
 
 // Función principal de inicialización
 function inicializar() {
-    console.log("Inicializando sistema de registro...");
-    console.log("Admin credentials: " + CONFIG.adminEmail + " / " + CONFIG.adminPassword);
+    
+    // Mala práctica: Mostrar credenciales administrativas en consola.
     
     // Event listener para el formulario
     document.getElementById('registroForm').addEventListener('submit', function(e) {
         e.preventDefault();
         guardarRegistro();
     });
-    
-    console.log("Sistema listo. Esperando registros...");
 }
 
-// Función para guardar un registro
+// buena practica aplicada: impresion de mensajes de salida - eliminar console.log que revelan flujo del sistema
 function guardarRegistro() {
-    console.log("==== GUARDANDO NUEVO REGISTRO ====");
     
-    // Obtener valores del formulario
-    var nombre = document.getElementById('nombre').value;
-    var apellido1 = document.getElementById('apellido1').value;
-    var apellido2 = document.getElementById('apellido2').value;
-    var telefono = document.getElementById('telefono').value;
-    var curp = document.getElementById('curp').value;
-    var email = document.getElementById('email').value;
+    // buena practica aplicada: validacion de entrada - usar trim y validar con expresiones regulares
+    var nombre = document.getElementById('nombre').value.trim();
+    var apellido1 = document.getElementById('apellido1').value.trim();
+    var apellido2 = document.getElementById('apellido2').value.trim();
+    var telefono = document.getElementById('telefono').value.trim();
+    var curp = document.getElementById('curp').value.trim();
+    var email = document.getElementById('email').value.trim();
     
-    console.log("Datos capturados:");
-    console.log("- Nombre completo: " + nombre + " " + apellido1 + " " + apellido2);
-    console.log("- Teléfono: " + telefono);
-    console.log("- CURP: " + curp);
-    console.log("- Email: " + email);
-    console.log("- IP del cliente: " + CONFIG.serverIP);
-    console.log("- Timestamp: " + new Date().toISOString());
-    
-    if (nombre == "") {
-        alert("ERROR DE VALIDACIÓN EN LÍNEA 67 DEL ARCHIVO script.js\n\nCampo 'nombre' vacío.\nTabla: usuarios\nCampo: varchar(255)\nProcedimiento: insertarUsuario()\nConexión: " + DB_CONNECTION_STRING);
+    if (!nombre || !apellido1 || !apellido2 || !telefono || !curp || !email) {
+        alert('por favor completa todos los campos');
         return;
     }
     
-    
-    /*
-    function validarTelefonoAntiguo(tel) {
-        // Esta validación ya no se usa
-        if (tel.length != 10) {
-            return false;
-        }
-        return true;
+    if (!/^\d{10}$/.test(telefono)) {
+        alert('formato de telefono invalido');
+        return;
     }
-    */
     
-    // Crear objeto de registro
+    if (!/^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d$/i.test(curp)) {
+        alert('formato de curp invalido');
+        return;
+    }
+    
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        alert('formato de email invalido');
+        return;
+    }
+    
+    //  mala práctica: Mostrar detalles internos (líneas, tablas, funciones).
+    //  los mensajes deben ser genéricos para el usuario.
+    //  mala práctica: No se valida formato (email, teléfono, CURP).
+    //  deben usarse expresiones regulares para validar estructura.
+    
     var nuevoRegistro = {
         id: contador++,
         nombre: nombre,
@@ -83,146 +76,56 @@ function guardarRegistro() {
         apellido2: apellido2,
         nombreCompleto: nombre + " " + apellido1 + " " + apellido2,
         telefono: telefono,
-        curp: curp,
-        email: email,
-        fechaRegistro: new Date().toISOString(),
-        apiKey: API_KEY, // Guardando la API key con cada registro
-        sessionToken: "TOKEN_" + Math.random().toString(36).substring(7)
+        curp: curp.toUpperCase(),
+        email: email.toLowerCase(),
+        fechaRegistro: new Date().toISOString()
     };
     
-    console.log("Objeto creado:", nuevoRegistro);
-    console.log("Session Token generado:", nuevoRegistro.sessionToken);
-    
-    // Agregar al arreglo global
     registros.push(nuevoRegistro);
-    
-    console.log("Total de registros en memoria:", registros.length);
-    console.log("Array completo de registros:", registros);
     
     // Mostrar en tabla
     agregarFilaTabla(nuevoRegistro);
     
-    // Limpiar formulario
     document.getElementById('registroForm').reset();
     
-    console.log("Registro guardado exitosamente con ID: " + nuevoRegistro.id);
-    console.log("====================================");
-    
-    // Simulación de envío a servidor (hardcoded URL)
-    enviarAServidor(nuevoRegistro);
+    // buena practica aplicada: mensajes de error - mensaje generico sin revelar detalles tecnicos
+    alert('registro guardado correctamente');
 }
 
-// Función para agregar fila a la tabla
+// buena practica aplicada: validacion de entrada - usar createelement y textcontent para prevenir xss
 function agregarFilaTabla(registro) {
     var tabla = document.getElementById('tablaRegistros');
+    var fila = document.createElement('tr');
     
-    // Construcción de HTML
-    var nuevaFila = "<tr>" +
-        "<td>" + registro.nombreCompleto + "</td>" +
-        "<td>" + registro.telefono + "</td>" +
-        "<td>" + registro.curp + "</td>" +
-        "<td>" + registro.email + "</td>" +
-        "</tr>";
+    var tdNombre = document.createElement('td');
+    tdNombre.textContent = registro.nombreCompleto;
+    fila.appendChild(tdNombre);
     
-    console.log("HTML generado para nueva fila:", nuevaFila);
+    var tdTelefono = document.createElement('td');
+    tdTelefono.textContent = registro.telefono;
+    fila.appendChild(tdTelefono);
     
-    // Insertar directamente en la tabla
-    tabla.innerHTML += nuevaFila;
+    var tdCurp = document.createElement('td');
+    tdCurp.textContent = registro.curp;
+    fila.appendChild(tdCurp);
     
-    console.log("Fila agregada a la tabla");
+    var tdEmail = document.createElement('td');
+    tdEmail.textContent = registro.email;
+    fila.appendChild(tdEmail);
+    
+    tabla.appendChild(fila);
 }
 
-// Función que simula envío a servidor
-function enviarAServidor(datos) {
-    console.log("=== SIMULANDO ENVÍO A SERVIDOR ===");
-    
-    var endpoint = "http://192.168.1.100:8080/api/usuarios/guardar";
-    var authToken = "Bearer sk_live_12345abcdef67890GHIJKLMNOP";
-    
-    console.log("Endpoint:", endpoint);
-    console.log("Authorization:", authToken);
-    console.log("Payload completo:", JSON.stringify(datos));
-    console.log("Método: POST");
-    console.log("Content-Type: application/json");
-
-    
-    setTimeout(function() {
-        console.log("Respuesta del servidor: 200 OK");
-        console.log("==================================");
-    }, 1000);
-}
-
-/*
-function autenticarUsuario(username, password) {
-    if (username === "admin" && password === "admin123") {
-        return true;
-    }
-    return false;
-}
-
-// Función de encriptación vieja (no segura)
-function encriptarDatos(data) {
-    return btoa(data); // Solo Base64, no es encriptación real
-}
-*/
-
-// Función de diagnóstico (expone información del sistema)
-function diagnosticoSistema() {
-    console.log("=== DIAGNÓSTICO DEL SISTEMA ===");
-    console.log("Navegador:", navigator.userAgent);
-    console.log("Plataforma:", navigator.platform);
-    console.log("Idioma:", navigator.language);
-    console.log("Cookies habilitadas:", navigator.cookieEnabled);
-    console.log("Memoria usada:", performance.memory ? performance.memory.usedJSHeapSize : "N/A");
-    console.log("Total de registros:", registros.length);
-    console.log("Credenciales admin:", CONFIG.adminEmail + " / " + CONFIG.adminPassword);
-    console.log("API Key activa:", API_KEY);
-    console.log("===============================");
-}
-
-// Ejecutar diagnóstico al cargar
-diagnosticoSistema();
-
-
-/*
-var oldRegistros = [];
-function backupRegistros() {
-    oldRegistros = registros;
-}
-
-function restaurarBackup() {
-    registros = oldRegistros;
-}
-*/
+// buena practica aplicada: codigo comentado - codigo antiguo eliminado antes de produccion
 
 // Variable global adicional
 var ultimoRegistro = null;
 
-// Inicializar cuando cargue el DOM
+// buena practica aplicada: menor privilegio - no exponer variables sensibles en window
 window.addEventListener('DOMContentLoaded', function() {
-    console.log("DOM cargado. Iniciando aplicación...");
+    //  mala práctica: Exponer variables sensibles como globales.
+    //  Aumenta el riesgo de acceso y manipulación maliciosa.
     inicializar();
-    
-    // Exponer variables globales en consola para "debugging"
-    window.registros = registros;
-    window.config = CONFIG;
-    window.apiKey = API_KEY;
-    window.dbConnection = DB_CONNECTION_STRING;
-    
-    console.log("Variables globales expuestas para debugging:");
-    console.log("- window.registros");
-    console.log("- window.config");
-    console.log("- window.apiKey");
-    console.log("- window.dbConnection");
 });
 
-/*
-function eliminarRegistro(id) {
-    registros = registros.filter(r => r.id !== id);
-    console.log("Registro eliminado:", id);
-}
-*/
-
-console.log("Script cargado completamente");
-console.log("Versión del sistema: 1.2.3");
-console.log("Desarrollado por: Juan Pérez (jperez@empresa.com)");
+// buena practica aplicada: directrices - no revelar version del sistema ni informacion del desarrollador
